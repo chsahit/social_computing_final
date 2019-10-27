@@ -104,6 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # stuff from 7745.zip that wouldnt fit in this repo
-*.npz
 *.zip
 gendered_posts.csv
+X_word_count.npz
