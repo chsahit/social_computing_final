@@ -106,4 +106,9 @@ venv.bak/
 # stuff from 7745.zip that wouldnt fit in this repo
 *.zip
 gendered_posts.csv
+trend_stats.csv
+keys_to_X.csv
+vocab10K.csv
 X_word_count.npz
+
+__MACOSX/
