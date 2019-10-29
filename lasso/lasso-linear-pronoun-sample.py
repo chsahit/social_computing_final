@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import sys
 
 dir_data="../" # specify the directory to data files
 dir_lasso="../" # where the outputs are saved
@@ -45,7 +46,7 @@ print(X_test0.shape)
 X_test1=X_test1[:,i_keep_columns]
 print(X_test1.shape)
 
-
+sys.exit()
 
 ################################################################################################################
 											### linear LASSO Model ###
