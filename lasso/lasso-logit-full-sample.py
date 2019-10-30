@@ -23,6 +23,7 @@ y_train=keys_merged.loc[i_train[0],'female'].as_matrix()
 
 ### (2) Bring in word count matrix X
 word_counts=np.load(dir_data+"X_word_count.npz",encoding='latin1')
+print("full X: ", word_counts['X'][()].shape)
 X=word_counts['X'][()]
 X_train=X[i_train[0],:]
 X_test0=X[i_test0[0],:]
@@ -33,10 +34,15 @@ X_test1=X[i_test1[0],:]
 vocab10K=pd.read_csv(dir_data+"vocab10K.csv")
 vocab10K['exclude'].sum()
 exclude_vocab=vocab10K.loc[vocab10K['exclude']==1,:]
+print("exclude: ", exclude_vocab['word'].to_string())
+sys.exit()
 i_exclude=exclude_vocab['index']-1 # indexing in Python starts from 0, while the indices for vocab are 1 to 10,000
 
 i_columns=range(10000)
+print(len(set(i_columns)))
+print("num exclude: ", len(set(i_exclude)))
 i_keep_columns=list(set(i_columns)-set(i_exclude))
+print("num left: ", len(i_keep_columns))
 np.savetxt(dir_lasso+"i_keep_columns.txt",i_keep_columns) # later this can be merged by estimated coefficients (in the same order as these indices)
 
 X_train=X_train[:,i_keep_columns]
