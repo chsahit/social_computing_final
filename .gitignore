@@ -110,5 +110,6 @@ trend_stats.csv
 keys_to_X.csv
 vocab10K.csv
 X_word_count.npz
+*.npy
 
 __MACOSX/
