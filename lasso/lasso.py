@@ -6,20 +6,20 @@ dir_data="../" # specify the directory to data files
 dir_lasso="../" # where the outputs are saved
 
 ### Bring in word count matrix X
-word_counts=np.load("twitter_data.npy")
-#word_counts = np.load("reddit_data.npy")
+#word_counts=np.load("twitter_data.npy")
+word_counts = np.load("reddit_data.npy")
 print("full X: ", word_counts.shape)
 X=word_counts
-X_train = X[:1500]
-X_test = X[1500:]
-'''X_train = X[:2000]
-X_test = X[2000:]'''
+'''X_train = X[:1500]
+X_test = X[1500:]'''
+X_train = X[:2000]
+X_test = X[2000:]
 
-y = np.load("twitter_labels.npy")
+'''y = np.load("twitter_labels.npy")
 y_train = y[:1500]
-print(y_train.sum())
-'''y = np.load("reddit_labels.npy")
-y_train = y[:2000]'''
+print(y_train.sum())'''
+y = np.load("reddit_labels.npy")
+y_train = y[:2000]
 
 ### Select Predictors: most frequent 10K excluding gender classifiers & additional last names
 vocab10K=pd.read_csv(dir_data+"vocab10K.csv")
@@ -54,8 +54,8 @@ ypred_train=model.predict_proba(X_train)[:,1] # Pr(female=1)
 ypred_test=model.predict_proba(X_test)[:,1]
 
 # ypred in the files below have been brought back into "genderd_posts.csv"
-'''np.savetxt(dir_lasso+"reddit_train.txt",ypred_train)
-np.savetxt(dir_lasso+"reddit_test.txt",ypred_test)'''
-np.savetxt(dir_lasso+"twitter_train.txt",ypred_train)
-np.savetxt(dir_lasso+"twitter_test.txt",ypred_test)
+np.savetxt(dir_lasso+"reddit_train.txt",ypred_train)
+np.savetxt(dir_lasso+"reddit_test.txt",ypred_test)
+'''np.savetxt(dir_lasso+"twitter_train.txt",ypred_train)
+np.savetxt(dir_lasso+"twitter_test.txt",ypred_test)'''
 
