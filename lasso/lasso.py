@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import sys
 
-def train_lasso(platform = "twitter"):
+def train_lasso(platform = "twitter", shrink = False):
     assert platform == "twitter" or platform == "reddit"
 
     dir_data="../" # specify the directory to data files
@@ -34,9 +34,15 @@ def train_lasso(platform = "twitter"):
     np.savetxt(dir_lasso+"i_keep_columns.txt",i_keep_columns) # later this can be merged by estimated coefficients (in the same order as these indices)
 
     X_train=X_train[:,i_keep_columns]
-    print("train: ", X_train.shape)
-    print("train: ", y_train.shape)
     X_test=X_test[:,i_keep_columns]
+    print("train x before: ", X_train.shape)
+    print("train y: ", y_train.shape)
+    print("test: ", X_test.shape)
+    if shrink:
+        X_train = X_train[:,:2000]
+        X_test = X_test[:,:2000]
+    print("train x: ", X_train.shape)
+    print("train y: ", y_train.shape)
     print("test: ", X_test.shape)
 
 
