@@ -13,6 +13,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_auc_score, classification_report
 from sklearn.linear_model import LogisticRegressionCV
 from heapq import nlargest, nsmallest
+import nltk
+from nltk.corpus import stopwords
 
 class Gender(Enum):
     NEITHER = 2
@@ -29,7 +31,7 @@ def getGenderedWords(genderedWordsPath: str) -> Tuple[List[Word], List[Word]]:
             female.append(word)
         elif word.female == "0":
             male.append(word)
-    
+
     return (male, female)
 
 def getPostGender(post: str, maleWords: Set[str], femaleWords: Set[str]) -> Gender:
@@ -40,10 +42,10 @@ def getPostGender(post: str, maleWords: Set[str], femaleWords: Set[str]) -> Gend
             maleCount += 1
         elif word in femaleWords:
             femaleCount += 1
-    
+
     if maleCount > 0 and femaleCount == 0:
         return Gender.MALE
-        
+
     if femaleCount > 0 and maleCount == 0:
         return Gender.FEMALE
 
@@ -60,7 +62,7 @@ def isLang(post: str, targetLang:str) -> bool:
 def getGenderedPosts(posts: str, maleWords: List[Word], femaleWords: List[Word]) -> Tuple[List[str], List[int]]:
     maleWords = set([x.word for x in maleWords])
     femaleWords = set([x.word for x in femaleWords])
-    
+
     genderedPosts = []
     genders = []
     for post in posts:
@@ -69,7 +71,7 @@ def getGenderedPosts(posts: str, maleWords: List[Word], femaleWords: List[Word])
             continue
         genderedPosts.append(post)
         genders.append(gender.value)
-    
+
     return (genderedPosts, genders)
 
 def bowFromTokens(tokens: List, bowTokens: List) -> List[int]:
@@ -114,11 +116,11 @@ def makeIsNotExcludedBigram(genderedWords: List[Word]):
     excludedWords = set([x.word for x in excludedWords])
 
     def notExcludedBigram(bigram: Tuple[str, str]):
-        assert type(bigram) == tuple and len(bigram) == 2, '''expected bigram would be a tuple of length 2, but got a {} 
+        assert type(bigram) == tuple and len(bigram) == 2, '''expected bigram would be a tuple of length 2, but got a {}
         of length {}'''.format(type(bigram), len(bigram))
-        
+
         return not (bigram[0] in excludedWords or bigram[1] in excludedWords)
-    
+
     return notExcludedBigram
 
 def makeIsNotExcludedUnigram(genderedWords: List[Word]):
@@ -126,10 +128,10 @@ def makeIsNotExcludedUnigram(genderedWords: List[Word]):
     excludedWords = set([x.word for x in excludedWords])
 
     def notExcludedUnigram(unigram: str):
-        return not unigram in excludedWords 
-    
+        return not unigram in excludedWords
+
     return notExcludedUnigram
-        
+
 
 def makeWordGenderer(words: List[Word]):
     maleWords = filter(lambda x: x.female == "0", words)
@@ -158,20 +160,20 @@ def makeBigramGenderer(words: List[Word]):
     def bigramGender(bigram) -> Gender:
         g1 = wordGenderer(bigram[0])
         g2 = wordGenderer(bigram[1])
-        
+
         # If one of the words in the bigram isn't gendered choose other gender
         if g1 == Gender.NEITHER:
             return g2
         if g2 == Gender.NEITHER:
             return g1
-        
+
         # If genders aren't the same and both are gendered the gender is
         # inconclusive, so return neither.
         if g1 != g2:
             return Gender.NEITHER
 
         return g1
-        
+
     return bigramGender
 
 def trainLassoModel(X, Y):
@@ -180,7 +182,7 @@ def trainLassoModel(X, Y):
                                                     train_size=0.9,
                                                     random_state=randomSeed)
     model=LogisticRegressionCV(Cs=20,cv=5,penalty='l1',solver='liblinear',refit=True, n_jobs = -1).fit(X_train,y_train)
-    
+
     coef=model.coef_
     print(coef[0].sum())
 
@@ -191,6 +193,30 @@ def trainLassoModel(X, Y):
     # print(confusion_matrix(y_test, y_predicted))
 
     return model
+
+# used to filter out stopwords and punctuation
+def isUnigramStopWord(word: str, stopword_set: set) -> bool:
+    return word in stopword_set or (not word.isalpha())
+
+def isBigramStopWord(word: Tuple[str, str], stopword_set: set) -> bool:
+    """
+    a bigram is a stopword if either of the words in the bigram are stopwords
+    """
+    return isUnigramStopWord(word[0], stopword_set) and isUnigramStopWord(word[1], stopword_set)
+
+def makeUnigramStopWordFilter(genderFilter):
+    nltk.download('stopwords')
+    stopword_set = set(stopwords.words('english'))
+    def stopword_filter(word: str):
+        return (not isUnigramStopWord(word, stopword_set)) and genderFilter(word)
+    return stopword_filter
+
+def makeBigramStopWordFilter(genderFilter):
+    nltk.download('stopwords')
+    stopword_set = set(stopwords.words('english'))
+    def stopword_filter(word: Tuple[str, str]):
+        return (not isBigramStopWord(word, stopword_set)) and genderFilter(word)
+    return stopword_filter
 
 def nMostPredictiveFeaturesFromModel(model, features: List, featureGenderer, n):
     featuresToCoef = {}
@@ -212,22 +238,23 @@ if __name__ == "__main__":
         Must be one of \{'twitter', 'reddit'\}.''', default="twitter", choices=["twitter", "reddit"])
     parser.add_argument("-ng","--ngram", help='''Ngram size.
         Right now, must be one of \{1, 2}.''', default=1, choices=[1, 2], type=int)
-    parser.add_argument("-nt","--numTokens", help="Number of most common tokens to use as features.", default=10000, choices=range(10, 200000), type=int)    
-    parser.add_argument("-nw","--numWords", help="Number of most coorelated words per gender to examine.", default=10, choices=range(5, 1000), type=int)    
-    
+    parser.add_argument("-nt","--numTokens", help="Number of most common tokens to use as features.", default=10000, choices=range(10, 200000), type=int)
+    parser.add_argument("-nw","--numWords", help="Number of most coorelated words per gender to examine.", default=10, choices=range(5, 1000), type=int)
+
     args = parser.parse_args()
+
 
     maleWords, femaleWords = getGenderedWords(args.genderedWordsPath)
     allGenderedWords = maleWords + femaleWords
 
     posts = None
-    if args.platform == "twitter": 
+    if args.platform == "twitter":
         posts = twitter_analysis.allTweetTexts(args.dataPath)
     elif args.platform == "reddit":
         posts = reddit_analysis.getRedditTexts(args.dataPath)
     else:
         raise
-    
+
     features = None
     genderer = None
     exclusionFilter = None
@@ -235,26 +262,28 @@ if __name__ == "__main__":
         features = [token for token, count in stats.nMostCommonTokens(posts, args.numTokens, stats.wordsInText)]
         genderer = makeWordGenderer(allGenderedWords)
         exclusionFilter = makeIsNotExcludedUnigram(allGenderedWords)
+        exclusionFilter = makeUnigramStopWordFilter(exclusionFilter)
     elif args.ngram == 2:
         features = [token for token, count in stats.nMostCommonTokens(posts, args.numTokens, stats.bigramsInText)]
         genderer = makeBigramGenderer(allGenderedWords)
         exclusionFilter = makeIsNotExcludedBigram(allGenderedWords)
+        exclusionFilter = makeBigramStopWordFilter(exclusionFilter)
     else:
         raise
-    
+
     genderedPosts, postGenders = getGenderedPosts(posts, maleWords, femaleWords)
-    
+
     # filtering excluded words from features
     features = filterTokens(features, tokenFilterFn=exclusionFilter)
 
     x = makeBOW(genderedPosts, features, stats.wordsInText)
     model = trainLassoModel(x, postGenders)
     male, female = nMostPredictiveFeaturesFromModel(model, features, genderer, args.numWords)
-    
+
     print("\nWomen:")
     for word, coef in female:
         print("\tWord: \"{}\" Coef: {}".format(word, coef))
-    
+
     print("\nMen:")
     for word, coef in male:
         print("\tWord: \"{}\" Coef: {}".format(word, coef))
