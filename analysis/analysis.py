@@ -238,8 +238,8 @@ if __name__ == "__main__":
         Must be one of \{'twitter', 'reddit'\}.''', default="twitter", choices=["twitter", "reddit"])
     parser.add_argument("-ng","--ngram", help='''Ngram size.
         Right now, must be one of \{1, 2}.''', default=1, choices=[1, 2], type=int)
-    parser.add_argument("-nt","--numTokens", help="Number of most common tokens to use as features.", default=10000, choices=range(10, 200000), type=int)
-    parser.add_argument("-nw","--numWords", help="Number of most coorelated words per gender to examine.", default=10, choices=range(5, 1000), type=int)
+    parser.add_argument("-nt","--numTokens", help="Number of most common tokens to use as features.", default=10000, type=int)
+    parser.add_argument("-nw","--numWords", help="Number of most coorelated words per gender to examine.", default=10, type=int)
 
     args = parser.parse_args()
 
