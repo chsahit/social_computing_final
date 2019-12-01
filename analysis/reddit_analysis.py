@@ -5,7 +5,14 @@ def getRedditTexts(pathToRedditData: str):
     data = pd.read_csv(pathToRedditData)
     posts = []
     for i in range(len(data)):
-        posts.append(str(data["text"][i]).lower())
+        posts.append(' '.join(
+          [
+            str(data["text"][i]),
+            str(data["comment1"][i]),
+            str(data["comment2"][i]),
+            str(data["comment3"][i])
+          ]
+        ).lower())
     return posts 
 
 def nMostCommonBigrams(pathToRedditData: str, n: int):
