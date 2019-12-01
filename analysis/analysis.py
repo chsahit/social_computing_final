@@ -91,7 +91,7 @@ def bowFromTokens(tokens: List, bowTokens: List) -> List[int]:
     for token in tokens:
         if token in tokenToIndex:
             index = tokenToIndex[token]
-            x[index] = 1
+            x[index] += 1
     return x
 
 def makeBOW(posts: List[str], bowTokens: List, tokenFn=stats.wordsInText) -> List[List[int]]:
@@ -189,8 +189,8 @@ def trainLassoModel(X, Y):
     y_predicted = model.predict(X_test)
     auc = roc_auc_score(y_test, y_predicted)
     print(classification_report(y_test, y_predicted))
-    # print("AUC: {}".format(auc))
-    # print(confusion_matrix(y_test, y_predicted))
+    print("AUC: {}".format(auc))
+    print(confusion_matrix(y_test, y_predicted))
 
     return model
 
@@ -202,20 +202,20 @@ def isBigramStopWord(word: Tuple[str, str], stopword_set: set) -> bool:
     """
     a bigram is a stopword if either of the words in the bigram are stopwords
     """
-    return isUnigramStopWord(word[0], stopword_set) and isUnigramStopWord(word[1], stopword_set)
+    return isUnigramStopWord(word[0], stopword_set) or isUnigramStopWord(word[1], stopword_set)
 
-def makeUnigramStopWordFilter(genderFilter):
+def makeIsNotStopWordUnigram():
     nltk.download('stopwords')
     stopword_set = set(stopwords.words('english'))
     def stopword_filter(word: str):
-        return (not isUnigramStopWord(word, stopword_set)) and genderFilter(word)
+        return not isUnigramStopWord(word, stopword_set)
     return stopword_filter
 
-def makeBigramStopWordFilter(genderFilter):
+def makeIsNotStopWordBigram():
     nltk.download('stopwords')
     stopword_set = set(stopwords.words('english'))
     def stopword_filter(word: Tuple[str, str]):
-        return (not isBigramStopWord(word, stopword_set)) and genderFilter(word)
+        return not isBigramStopWord(word, stopword_set)
     return stopword_filter
 
 def nMostPredictiveFeaturesFromModel(model, features: List, featureGenderer, n):
@@ -240,6 +240,8 @@ if __name__ == "__main__":
         Right now, must be one of \{1, 2}.''', default=1, choices=[1, 2], type=int)
     parser.add_argument("-nt","--numTokens", help="Number of most common tokens to use as features.", default=10000, type=int)
     parser.add_argument("-nw","--numWords", help="Number of most coorelated words per gender to examine.", default=10, type=int)
+    parser.add_argument('--filterStop', help='Filter tokens with a stop word.', action='store_true')
+    parser.add_argument('--filterExcluded', help='Filter tokens with words excluded by Wu.', action='store_true')
 
     args = parser.parse_args()
 
@@ -257,24 +259,35 @@ if __name__ == "__main__":
 
     features = None
     genderer = None
-    exclusionFilter = None
+    exclusionFilter = lambda x: True
+    stopWordFilter = lambda x: True
     if args.ngram == 1:
         features = [token for token, count in stats.nMostCommonTokens(posts, args.numTokens, stats.wordsInText)]
         genderer = makeWordGenderer(allGenderedWords)
-        exclusionFilter = makeIsNotExcludedUnigram(allGenderedWords)
-        exclusionFilter = makeUnigramStopWordFilter(exclusionFilter)
+        
+        if args.filterExcluded:
+            exclusionFilter = makeIsNotExcludedUnigram(allGenderedWords)
+        if args.filterStop:
+            stopWordFilter = makeIsNotStopWordUnigram()
     elif args.ngram == 2:
         features = [token for token, count in stats.nMostCommonTokens(posts, args.numTokens, stats.bigramsInText)]
         genderer = makeBigramGenderer(allGenderedWords)
-        exclusionFilter = makeIsNotExcludedBigram(allGenderedWords)
-        exclusionFilter = makeBigramStopWordFilter(exclusionFilter)
+        
+        if args.filterExcluded:
+            exclusionFilter = makeIsNotExcludedBigram(allGenderedWords)
+        if args.filterStop:
+            stopWordFilter = makeIsNotStopWordBigram()
     else:
         raise
 
     genderedPosts, postGenders = getGenderedPosts(posts, maleWords, femaleWords)
-
-    # filtering excluded words from features
+    
+    malePostCount = len(list(filter(lambda x: True if x == 0 else False, postGenders)))
+    femalePostCount = len(list(filter(lambda x: True if x == 1 else False, postGenders)))
+    print("\nNum Male Posts: {} Num Female Posts: {}".format(malePostCount, femalePostCount))
+    
     features = filterTokens(features, tokenFilterFn=exclusionFilter)
+    features = filterTokens(features, tokenFilterFn=stopWordFilter)
 
     x = makeBOW(genderedPosts, features, stats.wordsInText)
     model = trainLassoModel(x, postGenders)
