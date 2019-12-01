@@ -1,0 +1,11 @@
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1357016400&before=1388552400&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2013
+
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1388552400&before=1420088400&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2014
+
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1420088400&before=1451624400&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2015
+
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1451624400&before=1483246800&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2016
+
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1483246800&before=1514782800&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2017
+
+curl 'https://api.pushshift.io/reddit/search/submission/?q=&after=1514782800&before=1546318800&subreddit=economics&author=&aggs=&metadata=true&frequency=hour&advanced=false&sort=desc&domain=&sort_type=num_comments&size=1000' --compressed > 2018
